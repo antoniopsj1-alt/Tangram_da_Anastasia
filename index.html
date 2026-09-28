@@ -1003,16 +1003,24 @@ function pieceMatch(el, t){
   };
 }
 /* Encaixa e TRAVA a peça se ângulo e lugar estiverem certos: não sai mais até o fim do jogo */
-function tryLock(el, t){
+/* Modo monocromático: L1/L2 e S1/S2 têm o mesmo tamanho e a mesma cor, então uma pode ocupar a vaga da outra */
+const MONO_TWINS = {l1:'l2', l2:'l1', s1:'s2', s2:'s1'};
+function slotCandidates(pid){ return (MONO.on && MONO_TWINS[pid]) ? [pid, MONO_TWINS[pid]] : [pid]; }
+function tryLock(el, figId){
   if(el.dataset.locked) return true;
-  const m=pieceMatch(el,t);
-  if(!(m.posOk && m.rotOk)) return false;
-  el.dataset.flipx=1; el.dataset.flipy=1;
-  setTransform(el,t.cx,t.cy,t.r);
-  el.dataset.locked='1';
-  el.classList.remove('dragging','selected'); el.classList.add('locked');
-  if(selectedPieceEl===el){ selectedPieceEl=null; updateFlipHints(); }
-  return true;
+  const board=el.parentElement;
+  for(const slot of slotCandidates(el.dataset.id)){
+    if(board.querySelector(`.piece[data-slot="${slot}"]`)) continue;   // vaga já ocupada
+    const t=targetOf(figId,slot), m=pieceMatch(el,t);
+    if(!(m.posOk && m.rotOk)) continue;
+    el.dataset.flipx=1; el.dataset.flipy=1;
+    setTransform(el,t.cx,t.cy,t.r);
+    el.dataset.locked='1'; el.dataset.slot=slot;
+    el.classList.remove('dragging','selected'); el.classList.add('locked');
+    if(selectedPieceEl===el){ selectedPieceEl=null; updateFlipHints(); }
+    return true;
+  }
+  return false;
 }
 /* Área de toque ampliada: tocar perto de uma peça também a agarra */
 function enableGrabAssist(wrap){
@@ -1071,7 +1079,7 @@ function scatterPieces(board, pieces){
     el.addEventListener('piecemoved',()=>{
       const fig=FIGURES[state.currentFigure];
       if(!fig) return;
-      tryLock(el, targetOf(state.currentFigure,pid));
+      tryLock(el, state.currentFigure);
       if(board.id!=='creativeBoard320' && checkComplete(board,state.currentFigure)) roundEnd(true);
     });
 
@@ -1299,6 +1307,14 @@ $('btnNextRound').onclick=()=>{
 
 };
 
+/* Foto enviada pelo jogador (ou 🙂, se não enviou), em círculo */
+function avatarBadge(idx,size,ring){
+  const img=state.avatars[idx];
+  const st=`width:${size}px;height:${size}px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;box-sizing:border-box;background-color:#EEF3FB;font-size:${Math.round(size*.6)}px;border:${ring?'4px solid #f59e0b':'2px solid #DCE7F9'};`
+    +(img?`background-image:url('${img}');background-size:cover;background-position:center;`:'');
+  return `<span style="${st}">${img?'':'🙂'}</span>`;
+}
+
 function endGame(){
 
   updateScorePill();
@@ -1307,6 +1323,7 @@ function endGame(){
   if(state.modo===1){
     $('endScores').innerHTML=`
       <h2 style="color:#f59e0b;font-size:2rem;margin-bottom:20px">🎉 Fim de jogo!</h2>
+      <div style="display:flex;justify-content:center;margin-bottom:10px">${avatarBadge(0,72,true)}</div>
       <h3>${state.nomes[0]}</h3>
       <p>🏆 ${state.scores[0]} pontos no total</p>
     `;
@@ -1332,6 +1349,10 @@ function endGame(){
     </h2>
 
     ${empate ? '' : `
+    <div style="display:flex;justify-content:center;margin-bottom:10px">
+      ${avatarBadge(champion,84,true)}
+    </div>
+
     <h3>
       ${state.nomes[champion]}
     </h3>
@@ -1343,12 +1364,12 @@ function endGame(){
 
     <hr>
 
-    <p>
-      ${state.nomes[0]} : ${state.scores[0]} pts
+    <p style="display:flex;align-items:center;justify-content:center;gap:8px">
+      ${avatarBadge(0,28)} ${state.nomes[0]} : ${state.scores[0]} pts
     </p>
 
-    <p>
-      ${state.nomes[1]} : ${state.scores[1]} pts
+    <p style="display:flex;align-items:center;justify-content:center;gap:8px">
+      ${avatarBadge(1,28)} ${state.nomes[1]} : ${state.scores[1]} pts
     </p>
   `;
 
@@ -1421,14 +1442,20 @@ function checklistStatusFor(el, target){
 
 // Confere as 7 peças de uma vez (usado ao abrir a figura, pra já marcar
 // automaticamente quem por acaso já nasceu no lugar/ângulo certo).
-function refreshChecklistAll(board, figId){
-  const fig = FIGURES[figId];
-  board.querySelectorAll('.piece').forEach(el=>{
-    const pid = el.dataset.id, target = targetOf(figId,pid);
-    if(!target) return;
-    const { rotOk, posOk } = checklistStatusFor(el, target);
-    updateChecklistItem(pid, rotOk, posOk);
+/* Status de uma vaga: no modo monocromático vale a melhor peça entre as gêmeas */
+function slotStatus(board, figId, pid){
+  const t=targetOf(figId,pid); let best={rotOk:false,posOk:false}, bs=-1;
+  slotCandidates(pid).forEach(id=>{
+    board.querySelectorAll(`.piece[data-id="${id}"]`).forEach(el=>{
+      if(el.dataset.locked && el.dataset.slot!==pid) return;   // já encaixada em outra vaga
+      const m=pieceMatch(el,t), sc=(m.rotOk?1:0)+(m.posOk?1:0);
+      if(sc>bs){ bs=sc; best={rotOk:m.rotOk,posOk:m.posOk}; }
+    });
   });
+  return best;
+}
+function refreshChecklistAll(board, figId){
+  CHECK_ORDER.forEach(pid=>{ const st=slotStatus(board,figId,pid); updateChecklistItem(pid,st.rotOk,st.posOk); });
   updateChecklistProgress();
 }
 
@@ -1480,12 +1507,7 @@ function startCreative(figId){
 
     el.addEventListener('piecemoved',()=>{
 
-      const pid=el.dataset.id;
-      const target=targetOf(figId,pid);
-
-      const status = checklistStatusFor(el, target);
-      updateChecklistItem(pid, status.rotOk, status.posOk);
-      updateChecklistProgress();
+      refreshChecklistAll(board, figId);
 
       if(checkComplete(board,figId)){
 
