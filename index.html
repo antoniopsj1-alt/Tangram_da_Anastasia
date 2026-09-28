@@ -352,6 +352,8 @@ body.mono .piece.selected{filter:drop-shadow(0 0 3px #2563EB) drop-shadow(0 0 .8
 .piece.locked{pointer-events:none;z-index:1;outline:none;filter:drop-shadow(0 0 2px rgba(34,197,94,.95))}
 body.mono .piece.locked{filter:drop-shadow(0 0 .8px var(--edge)) drop-shadow(0 0 2px rgba(34,197,94,.95))}
 .flipbar button{min-width:48px;min-height:46px}
+/* centralização: largura da própria caixa (96vw estourava o padding e deslocava a figura no celular) */
+.figureview,.boardwrap{width:100%;max-width:760px;margin-left:auto;margin-right:auto;box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -860,9 +862,10 @@ function showFigurePreview(container, figId, colorful){
   const inner=document.createElement('div'); inner.style.position='relative'; inner.style.width='430px'; inner.style.height='430px';
   inner.style.transformOrigin='top left';
   const fig=FIGURES[figId];
+  const sh=figShift(figId);
   Object.entries(fig.p).forEach(([pid,t])=>{
     const el=pieceEl(pid); if(!colorful) el.style.background='#8CA0C4';
-    inner.appendChild(el); setTransform(el,t.cx,t.cy,t.r);
+    inner.appendChild(el); setTransform(el,t.cx+sh.dx,t.cy+sh.dy,t.r);
   });
   container.appendChild(inner);
   const k = container.clientWidth/430; inner.style.transform=`scale(${k})`;
@@ -976,6 +979,21 @@ function sameShape(A,B,tol){
   const near=(P,Q)=>P.every(a=>Q.some(b=>Math.hypot(a[0]-b[0],a[1]-b[1])<tol));
   return A.length===B.length && near(A,B) && near(B,A);
 }
+/* Centraliza cada figura: desloca todas as peças alvo para que o retângulo da figura fique no centro do canvas.
+   O mesmo deslocamento vale para a pré-visualização, a marca d'água e o encaixe. */
+const _shift={};
+function figShift(figId){
+  if(_shift[figId]) return _shift[figId];
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  Object.entries(FIGURES[figId].p).forEach(([id,t])=>{
+    visualPts(id,t.r,1,1).forEach(([x,y])=>{
+      x0=Math.min(x0,t.cx+x); x1=Math.max(x1,t.cx+x); y0=Math.min(y0,t.cy+y); y1=Math.max(y1,t.cy+y);
+    });
+  });
+  return _shift[figId]={dx:215-(x0+x1)/2, dy:215-(y0+y1)/2};
+}
+// alvo da peça no tabuleiro (só centraliza na horizontal: embaixo fica a bandeja de peças)
+function targetOf(figId,pid){ const t=FIGURES[figId].p[pid], s=figShift(figId); return {cx:t.cx+s.dx, cy:t.cy, r:t.r}; }
 function pieceMatch(el, t){
   const c=centerOf(el), pid=el.dataset.id;
   const fx=parseInt(el.dataset.flipx||1), fy=parseInt(el.dataset.flipy||1);
@@ -1053,7 +1071,7 @@ function scatterPieces(board, pieces){
     el.addEventListener('piecemoved',()=>{
       const fig=FIGURES[state.currentFigure];
       if(!fig) return;
-      tryLock(el, fig.p[pid]);
+      tryLock(el, targetOf(state.currentFigure,pid));
       if(board.id!=='creativeBoard320' && checkComplete(board,state.currentFigure)) roundEnd(true);
     });
 
@@ -1187,12 +1205,8 @@ function showGhostGuide(board, figId){ //Marca dágua
 
       board.appendChild(g);
 
-      setTransform(
-        g,
-        t.cx,
-        t.cy,
-        t.r
-      );
+      const T = targetOf(figId,pid);
+      setTransform(g, T.cx, T.cy, T.r);
 
   });
 
@@ -1410,7 +1424,7 @@ function checklistStatusFor(el, target){
 function refreshChecklistAll(board, figId){
   const fig = FIGURES[figId];
   board.querySelectorAll('.piece').forEach(el=>{
-    const pid = el.dataset.id, target = fig.p[pid];
+    const pid = el.dataset.id, target = targetOf(figId,pid);
     if(!target) return;
     const { rotOk, posOk } = checklistStatusFor(el, target);
     updateChecklistItem(pid, rotOk, posOk);
@@ -1467,7 +1481,7 @@ function startCreative(figId){
     el.addEventListener('piecemoved',()=>{
 
       const pid=el.dataset.id;
-      const target=FIGURES[figId].p[pid];
+      const target=targetOf(figId,pid);
 
       const status = checklistStatusFor(el, target);
       updateChecklistItem(pid, status.rotOk, status.posOk);
