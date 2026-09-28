@@ -345,6 +345,13 @@ footer{padding:20px 16px 28px}
   .stagebox{padding:14px;border-radius:22px}
   .gamebtns .btn{flex:1 1 100%}
 }
+/* toque e arrasto no celular: a tela não rola nem seleciona texto ao mexer nas peças */
+.piece,.boardwrap{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.piece.selected{outline:none;filter:drop-shadow(0 0 3px #2563EB) drop-shadow(0 2px 3px rgba(0,0,0,.2))}
+body.mono .piece.selected{filter:drop-shadow(0 0 3px #2563EB) drop-shadow(0 0 .8px var(--edge))}
+.piece.locked{pointer-events:none;z-index:1;outline:none;filter:drop-shadow(0 0 2px rgba(34,197,94,.95))}
+body.mono .piece.locked{filter:drop-shadow(0 0 .8px var(--edge)) drop-shadow(0 0 2px rgba(34,197,94,.95))}
+.flipbar button{min-width:48px;min-height:46px}
 </style>
 </head>
 <body>
@@ -439,6 +446,8 @@ footer{padding:20px 16px 28px}
       <div class="boardwrap hidden" id="boardWrap"><div class="board320" id="board320"></div></div>
       <div class="flipbar hidden" id="flipBar">
         <span id="flipHint">👆 Toque numa peça para selecioná-la</span>
+        <button id="btnRotL" aria-label="Girar 45 graus para a esquerda">⟲ 45°</button>
+        <button id="btnRotR" aria-label="Girar 45 graus para a direita">⟳ 45°</button>
         <button id="btnFlipH">↔️ Inverter</button>
         <button id="btnFlipV">↕️ Virar</button>
       </div>
@@ -469,6 +478,8 @@ footer{padding:20px 16px 28px}
       <div class="boardwrap" id="creativeBoardWrap"><div class="board320" id="creativeBoard320"></div></div>
       <div class="flipbar" id="flipBarC">
         <span id="flipHintC">👆 Toque numa peça para selecioná-la</span>
+        <button id="btnRotLC" aria-label="Girar 45 graus para a esquerda">⟲ 45°</button>
+        <button id="btnRotRC" aria-label="Girar 45 graus para a direita">⟳ 45°</button>
         <button id="btnFlipHC">↔️ Inverter</button>
         <button id="btnFlipVC">↕️ Virar</button>
       </div>
@@ -877,36 +888,43 @@ function selectPiece(el){
   updateFlipHints();
 }
 function updateFlipHints(){
-  const label = selectedPieceEl ? `✅ Peça selecionada — use os botões para inverter` : '👆 Toque numa peça para selecioná-la';
+  const label = selectedPieceEl ? `✅ Peça selecionada — gire (⟲ ⟳ 45°) ou inverta` : '👆 Toque numa peça para selecioná-la';
   const h1=document.getElementById('flipHint'), h2=document.getElementById('flipHintC');
   if(h1) h1.textContent=label;
   if(h2) h2.textContent=label;
 }
 
 
-function enableDrag(el, board){
-  el.addEventListener('pointerdown', e=>{
-    e.preventDefault();
-    const rect=board.getBoundingClientRect(); const k=board.clientWidth/430;
-    dragCtx={ el, board, k, offX: (e.clientX-rect.left)/k - parseFloat(el.style.left), offY: (e.clientY-rect.top)/k - parseFloat(el.style.top) };
-    el.classList.add('dragging'); el.setPointerCapture && el.setPointerCapture(e.pointerId);
-    selectPiece(el);
-  });
-  el.addEventListener('pointerup', e=>{
+/* Início de arrasto (usado pela própria peça e pela área de toque ao redor dela) */
+function startDrag(el, e, wrap){
+  if(el.dataset.locked) return;               // peça já encaixada: não mexe mais
+  const rect=wrap.getBoundingClientRect(); const k=wrap.clientWidth/430;
+  dragCtx={ el, board:wrap, k, sx:e.clientX, sy:e.clientY, moved:false,
+    offX:(e.clientX-rect.left)/k - parseFloat(el.style.left),
+    offY:(e.clientY-rect.top)/k - parseFloat(el.style.top) };
+  el.classList.add('dragging');
+  try{ el.setPointerCapture(e.pointerId); }catch(_){}
+  selectPiece(el);
+}
+function enableDrag(el, wrap){
+  el.addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation(); startDrag(el,e,wrap); });
+  // Toque duplo (sem arrastar) = gira 45°. Sem 'dblclick': ele somava outro giro e pulava 90°.
+  el.addEventListener('pointerup', ()=>{
+    if(el.dataset.locked || !dragCtx || dragCtx.moved){ lastTap={id:null,t:0}; return; }
     const now=Date.now();
-    if(lastTap.id===el && now-lastTap.t<350){
-      el.dataset.rot=(parseInt(el.dataset.rot||0)+45)%360; applyRT(el);
-      el.dispatchEvent(new CustomEvent('piecemoved'));
-    }
-    lastTap={id:el,t:now};
-  });
-  el.addEventListener('dblclick', ()=>{
-    el.dataset.rot=(parseInt(el.dataset.rot||0)+45)%360; applyRT(el);
-    el.dispatchEvent(new CustomEvent('piecemoved'));
+    if(lastTap.id===el && now-lastTap.t<350){ rotateEl(el,45); lastTap={id:null,t:0}; }
+    else lastTap={id:el,t:now};
   });
 }
+function rotateEl(el, delta){
+  if(!el || el.dataset.locked) return;
+  el.dataset.rot=(((parseInt(el.dataset.rot||0)+delta)%360)+360)%360;
+  applyRT(el);
+  el.dispatchEvent(new CustomEvent('piecemoved'));
+}
+function rotateSelected(d){ if(!selectedPieceEl){ updateFlipHints(); return; } rotateEl(selectedPieceEl,d); }
 function flipSelected(axis){
-  if(!selectedPieceEl){ updateFlipHints(); return; }
+  if(!selectedPieceEl || selectedPieceEl.dataset.locked){ updateFlipHints(); return; }
   const key = axis==='x' ? 'flipx' : 'flipy';
   selectedPieceEl.dataset[key] = (parseInt(selectedPieceEl.dataset[key]||1) * -1);
   applyRT(selectedPieceEl);
@@ -916,8 +934,11 @@ $('btnFlipH').onclick=()=>flipSelected('x');
 $('btnFlipV').onclick=()=>flipSelected('y');
 $('btnFlipHC').onclick=()=>flipSelected('x');
 $('btnFlipVC').onclick=()=>flipSelected('y');
+[['btnRotL',-45],['btnRotR',45],['btnRotLC',-45],['btnRotRC',45]].forEach(([id,d])=>{ $(id).onclick=()=>rotateSelected(d); });
+
 window.addEventListener('pointermove', e=>{
   if(!dragCtx) return;
+  if(!dragCtx.moved && Math.hypot(e.clientX-dragCtx.sx, e.clientY-dragCtx.sy)>6) dragCtx.moved=true;
   const rect=dragCtx.board.getBoundingClientRect();
   let x=(e.clientX-rect.left)/dragCtx.k - dragCtx.offX;
   let y=(e.clientY-rect.top)/dragCtx.k - dragCtx.offY;
@@ -926,9 +947,53 @@ window.addEventListener('pointermove', e=>{
   y = Math.max(0, Math.min(530-h, y));
   dragCtx.el.style.left=x+'px'; dragCtx.el.style.top=y+'px';
 });
-window.addEventListener('pointerup', ()=>{
-  if(dragCtx){ dragCtx.el.classList.remove('dragging'); dragCtx.el.dispatchEvent(new CustomEvent('piecemoved')); dragCtx=null; }
-});
+function endDrag(){
+  if(!dragCtx) return;
+  const el=dragCtx.el; dragCtx=null;
+  el.classList.remove('dragging');
+  el.dispatchEvent(new CustomEvent('piecemoved'));
+}
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', endDrag);
+// a tela não rola enquanto uma peça é arrastada (iOS/Android)
+document.addEventListener('touchmove', e=>{ if(dragCtx) e.preventDefault(); },{passive:false});
+
+/* Conferência: quadrado repete a cada 90°; paralelogramo não pode estar espelhado */
+function pieceMatch(el, t){
+  const c=centerOf(el), pid=el.dataset.id, period = pid==='sq' ? 90 : 360;
+  let dr=Math.abs(c.r-t.r)%period; dr=Math.min(dr,period-dr);
+  const fx=parseInt(el.dataset.flipx||1), fy=parseInt(el.dataset.flipy||1);
+  return {
+    posOk: Math.abs(c.cx-t.cx)<POS_TOL && Math.abs(c.cy-t.cy)<POS_TOL,
+    rotOk: dr<ROT_TOL && (pid!=='pa' || fx*fy===1)
+  };
+}
+/* Encaixa e TRAVA a peça se ângulo e lugar estiverem certos: não sai mais até o fim do jogo */
+function tryLock(el, t){
+  if(el.dataset.locked) return true;
+  const m=pieceMatch(el,t);
+  if(!(m.posOk && m.rotOk)) return false;
+  el.dataset.flipx=1; el.dataset.flipy=1;
+  setTransform(el,t.cx,t.cy,t.r);
+  el.dataset.locked='1';
+  el.classList.remove('dragging','selected'); el.classList.add('locked');
+  if(selectedPieceEl===el){ selectedPieceEl=null; updateFlipHints(); }
+  return true;
+}
+/* Área de toque ampliada: tocar perto de uma peça também a agarra */
+function enableGrabAssist(wrap){
+  if(wrap._grab) return; wrap._grab=true;
+  wrap.addEventListener('pointerdown', e=>{
+    if(e.target.closest('.piece')) return;
+    const rect=wrap.getBoundingClientRect(), k=wrap.clientWidth/430;
+    let best=null, bd=34;
+    wrap.querySelectorAll('.piece:not(.locked)').forEach(p=>{
+      const c=centerOf(p), d=Math.hypot((e.clientX-rect.left)/k-c.cx,(e.clientY-rect.top)/k-c.cy);
+      if(d<bd){ bd=d; best=p; }
+    });
+    if(best){ e.preventDefault(); startDrag(best,e,wrap); }
+  });
+}
 
 /* --- Espalha as 7 peças na bandeja (parte inferior do canvas 430x530) --- */
 const TRAY_POS = {
@@ -950,6 +1015,8 @@ function scatterPieces(board, pieces){
   board.querySelectorAll('.piece').forEach(p=>p.remove());
   selectedPieceEl=null; updateFlipHints();
 
+  enableGrabAssist(board.parentElement);
+
   pieces.forEach(pid=>{
 
     const el=pieceEl(pid);
@@ -968,43 +1035,10 @@ function scatterPieces(board, pieces){
     enableDrag(el, board.parentElement);
 
     el.addEventListener('piecemoved',()=>{
-
       const fig=FIGURES[state.currentFigure];
       if(!fig) return;
-
-      const target=fig.p[pid];
-
-      const c=centerOf(el);
-
-      const dx=Math.abs(c.cx-target.cx);
-      const dy=Math.abs(c.cy-target.cy);
-
-      const dr=Math.min(
-        Math.abs(c.r-target.r),
-        360-Math.abs(c.r-target.r)
-      );
-
-      if(dx<26 && dy<26 && dr<25){
-
-        setTransform(
-          el,
-          target.cx,
-          target.cy,
-          target.r
-        );
-
-        el.classList.add('locked');
-
-      }else{
-
-        el.classList.remove('locked');
-
-      }
-
-      if(checkComplete(board,state.currentFigure)){
-        roundEnd(true);
-      }
-
+      tryLock(el, fig.p[pid]);
+      if(board.id!=='creativeBoard320' && checkComplete(board,state.currentFigure)) roundEnd(true);
     });
 
   });
@@ -1018,35 +1052,9 @@ function centerOf(el){
 }
 
 function checkComplete(board, figId){
-
-  const fig = FIGURES[figId];
-
-  let total = 0;
-
-  board.querySelectorAll('.piece').forEach(el=>{
-
-    const target = fig.p[el.dataset.id];
-
-    const c = centerOf(el);
-
-    const dx = Math.abs(c.cx-target.cx);
-    const dy = Math.abs(c.cy-target.cy);
-
-    const good =
-      dx < 10 &&
-      dy < 10;
-
-    if(good){
-      total++;
-      el.classList.add('locked');
-    }
-
-  });
-
-  return total === 7;
+  return board.querySelectorAll('.piece[data-locked="1"]').length === 7;
 }
 
-/* ===================== FLUXO DO JOGO ===================== */
 function nextRound(){
 
   if(state.round >= state.rounds){
@@ -1377,11 +1385,8 @@ function updateChecklistItem(pid, rotOk, posOk){
 }
 
 function checklistStatusFor(el, target){
-  const c = centerOf(el);
-  const dr = Math.min(Math.abs(c.r-target.r), 360-Math.abs(c.r-target.r));
-  const rotOk = dr < ROT_TOL;
-  const posOk = Math.abs(c.cx-target.cx) < POS_TOL && Math.abs(c.cy-target.cy) < POS_TOL;
-  return { rotOk, posOk };
+  const m=pieceMatch(el,target);
+  return { rotOk:m.rotOk, posOk:m.posOk };
 }
 
 // Confere as 7 peças de uma vez (usado ao abrir a figura, pra já marcar
@@ -1428,6 +1433,7 @@ function startCreative(figId){
 
   showGhostGuide(board, figId);
 
+  state.currentFigure=figId;
   scatterPieces(board,Object.keys(PIECES));
 
   $('creativeMsg').textContent =
@@ -1444,38 +1450,8 @@ function startCreative(figId){
 
     el.addEventListener('piecemoved',()=>{
 
-      const fig=FIGURES[figId];
-
       const pid=el.dataset.id;
-
-      const target=fig.p[pid];
-
-      const c=centerOf(el);
-
-      const dx=Math.abs(c.cx-target.cx);
-      const dy=Math.abs(c.cy-target.cy);
-
-      const dr=Math.min(
-        Math.abs(c.r-target.r),
-        360-Math.abs(c.r-target.r)
-      );
-
-      if(dx<26 && dy<26 && dr<25){
-
-        setTransform(
-        el,
-        target.cx,
-        target.cy,
-        target.r
-        );
-
-        el.classList.add('locked');
-
-      }else{
-
-        el.classList.remove('locked');
-
-      }
+      const target=FIGURES[figId].p[pid];
 
       const status = checklistStatusFor(el, target);
       updateChecklistItem(pid, status.rotOk, status.posOk);
