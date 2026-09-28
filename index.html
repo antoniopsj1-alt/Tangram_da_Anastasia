@@ -605,36 +605,55 @@ const PIECE_INFO = {
    detectam automaticamente todas as que existirem aqui.
    ========================================================================= */
 const FIGURES = {
- Casa:{name:'Casa',emoji:'🏠',themes:['Objetos'],p:{
-   sq:{cx:201.72,cy:55.15,r:0}, pa:{cx:230,cy:111.72,r:45}, l1:{cx:150,cy:140,r:45}, l2:{cx:178.28,cy:220,r:45},
-   m:{cx:218.28,cy:180,r:90}, s1:{cx:138.28,cy:140,r:225}, s2:{cx:98.28,cy:180,r:135} }},
- Barco:{name:'Barco',emoji:'⛵',themes:['Transporte'],p:{
-   sq:{cx:200.00,cy:111.72,r:0}, pa: { cx: 300.00, cy: 160.00, r: 0}, l1:{cx:200.00,cy:220.00,r:45}, l2:{cx:120.00,cy:140.00,r:225},
-   m:{cx:200.00,cy:83.43,r:45}, s1:{cx:280.00,cy:180.00,r:225}, s2:{cx:240.00,cy:140.00,r:225} }},
- Gato:{name:'Gato',emoji:'🐱',themes:['Animais'],p:{
-   l1:{cx:143.43,cy:215.26,r:0}, m:{cx:200.00,cy:215.26,r:45}, s1:{cx:353.14,cy:78.69,r:315}, s2:{cx:273.14,cy:78.69,r:135},
-   pa:{cx:66.86,cy:98.69,r:90}, sq:{cx:313.14,cy:118.69,r:45}, l2:{cx:256.57,cy:215.26,r:90} }},
- Coelho:{name:'Coelho',emoji:'🐇',themes:['Animais'],p:{
-   sq:{cx:138.58,cy:141.42,r:0}, m:{cx:240.00,cy:327.70,r:270}, s1:{cx:200,cy:327.70,r:315}, s2:{cx:166.86,cy:254.56,r:315},
-   pa:{cx:195.15,cy:56.57,r:135}, l1:{cx:223.43,cy:197.99,r:270}, l2:{cx:223.43,cy:311.13,r:90} }},
- Pessoa:{name:'Pessoa',emoji:'🧍',themes:['Pessoas'],p:{
+ 'Mulher Andando':{name:'Mulher Andando',emoji:'👩',themes:['Pessoas'],p:{
    s1:{cx:91.72,cy:351.61,r:180}, s2:{cx:273.14,cy:351.61,r:90}, pa:{cx:296.57,cy:78.47,r:45}, m:{cx:120.00,cy:283.32,r:180},
    sq:{cx:200.00,cy:50.19,r:45}, l1:{cx:200,cy:170.19,r:315}, l2:{cx:216.57,cy:266.76,r:270} }},
+ 'Homem Orando':{name:'Homem Orando',emoji:'🙏',themes:['Pessoas'],p:{
+   s1:{cx:128.28,cy:71.72,r:270}, s2:{cx:140.00,cy:100.00,r:225}, l1:{cx:220.00,cy:140.00,r:315}, l2:{cx:140.00,cy:220.00,r:135}, 
+   m:{cx:196.57,cy:300.00,r:45}, sq:{cx:200.00,cy:40.00,r:45}, pa:{cx:253.14,cy:271.72,r:45} }},
+'Mulher Geisha':{name:'Mulher Geisha',emoji:'🎎',themes:['Pessoas'],p:{
+   s1:{cx:131.72,cy:68.28,r:180}, s2:{cx:220.00,cy:140.00,r:135}, l1:{cx:240.00,cy:240.00,r:315}, l2:{cx:160.00,cy:320.00,r:135}, 
+   m:{cx:200.00,cy:360.00,r:180}, sq:{cx:200.00,cy:40.00,r:45}, pa:{cx:200.00,cy:120,r:90} }},
+'Homem Vietnamita':{name:'Homem Vietnamita',emoji:'👨‍🌾',themes:['Pessoas'],p:{
+   s1:{cx:200,cy:56.57,r:270}, s2:{cx:171.72,cy:339.41,r:180}, l1:{cx:171.72,cy:141.42,r:180}, l2:{cx:200.00,cy:56.57,r:90}, 
+   m:{cx:211.72,cy:237.97,r:90}, sq:{cx:200.00,cy:282.84,r:0}, pa:{cx:171.72,cy:226.27,r:45} }},
+
+
+   Gato:{name:'Gato',emoji:'🐱',themes:['Animais'],p:{
+   l1:{cx:143.43,cy:215.26,r:0}, m:{cx:200.00,cy:215.26,r:45}, s1:{cx:353.14,cy:78.69,r:315}, s2:{cx:273.14,cy:78.69,r:135},
+   pa:{cx:66.86,cy:98.69,r:90}, sq:{cx:313.14,cy:118.69,r:45}, l2:{cx:256.57,cy:215.26,r:90} }},
+  Coelho:{name:'Coelho',emoji:'🐇',themes:['Animais'],p:{
+   sq:{cx:138.58,cy:141.42,r:0}, m:{cx:240.00,cy:327.70,r:270}, s1:{cx:200,cy:327.70,r:315}, s2:{cx:166.86,cy:254.56,r:315},
+   pa:{cx:195.15,cy:56.57,r:135}, l1:{cx:223.43,cy:197.99,r:270}, l2:{cx:223.43,cy:311.13,r:90} }},
+
+   Casa:{name:'Casa',emoji:'🏠',themes:['Objetos'],p:{
+   sq:{cx:201.72,cy:55.15,r:0}, pa:{cx:230,cy:111.72,r:45}, l1:{cx:150,cy:140,r:45}, l2:{cx:178.28,cy:220,r:45},
+   m:{cx:218.28,cy:180,r:90}, s1:{cx:138.28,cy:140,r:225}, s2:{cx:98.28,cy:180,r:135} }},
+
+   Barco:{name:'Barco',emoji:'⛵',themes:['Transporte'],p:{
+   sq:{cx:200.00,cy:111.72,r:0}, pa: { cx: 300.00, cy: 160.00, r: 0}, l1:{cx:200.00,cy:220.00,r:45}, l2:{cx:120.00,cy:140.00,r:225},
+   m:{cx:200.00,cy:83.43,r:45}, s1:{cx:280.00,cy:180.00,r:225}, s2:{cx:240.00,cy:140.00,r:225} }},
+
+
  Quadrado:{name:'Quadrado',emoji:'🟦',themes:['Formas Geométricas'],p:{
    l1:{cx:200,cy:80,r:225}, l2:{cx:280,cy:160,r:315}, sq:{cx:200,cy:200,r:45}, pa:{cx:140,cy:140,r:90},
    m:{cx:160,cy:200,r:270}, s1:{cx:240,cy:240,r:45}, s2:{cx:160,cy:160,r:135} }},
  Estrela:{name:'Estrela',emoji:'⭐',themes:['Formas Geométricas'],p:{
    l1:{cx:286.05,cy:150.00,r:0}, l2:{cx:116.35,cy:150,r:90}, sq:{cx:201.20,cy:178.28,r:0}, pa:{cx:201.20,cy:93.43,r:315},
    m:{cx:116.35,cy:206.57,r:45}, s1:{cx:201.20,cy:234.85,r:90}, s2:{cx:201.20,cy:121.72,r:180} }},
- 'Letra A':{name:'Letra A',emoji:'🅰️',themes:['Alfabeto'],p:{
-   l1:{cx:114.52,cy:173.43,r:135}, l2:{cx:227.66,cy:206.57,r:90}, sq:{cx:255.94,cy:121.72,r:0}, pa:{cx:227.66,cy:65.15,r:45},
-   m:{cx:171.09,cy:93.43,r:45}, s1:{cx:194.52,cy:213.43,r:45}, s2:{cx:142.80,cy:121.72,r:90} }},
+
  Três:{name:'Três',emoji:'3️⃣',themes:['Números'],p:{
    sq:{cx:262.49,cy:141.42,r:0}, l1:{cx:177.64,cy:169.71,r:270}, l2:{cx:234.21,cy:226.27,r:90}, m:{cx:177.64,cy:113.14,r:315},
    pa:{cx:149.36,cy:56.57,r:135}, s1:{cx:262.49,cy:254.56,r:270}, s2:{cx:319.06,cy:197.99,r:0} }},
  Quatro:{name:'Quatro',emoji:'4️⃣',themes:['Números'],p:{
    sq:{cx:262.49,cy:141.42,r:0}, l1:{cx:177.64,cy:169.71,r:270}, l2:{cx:234.21,cy:226.27,r:90}, m:{cx:177.64,cy:113.14,r:315},
-   pa:{cx:149.36,cy:56.57,r:135}, s1:{cx:262.49,cy:254.56,r:270}, s2:{cx:319.06,cy:197.99,r:0} }}};
+   pa:{cx:149.36,cy:56.57,r:135}, s1:{cx:262.49,cy:254.56,r:270}, s2:{cx:319.06,cy:197.99,r:0} }},
+
+   'Letra A':{name:'Letra A',emoji:'🅰️',themes:['Alfabeto'],p:{
+   l1:{cx:114.52,cy:173.43,r:135}, l2:{cx:227.66,cy:206.57,r:90}, sq:{cx:255.94,cy:121.72,r:0}, pa:{cx:227.66,cy:65.15,r:45},
+   m:{cx:171.09,cy:93.43,r:45}, s1:{cx:194.52,cy:213.43,r:45}, s2:{cx:142.80,cy:121.72,r:90} }}
+
+  };
 const THEMES = ['Pessoas','Animais','Objetos','Transporte','Formas Geométricas','Números','Alfabeto','Todos'];
 const THEME_EMOJI = {Pessoas:'🧍',Animais:'🐾',Objetos:'🏠',Transporte:'🚗','Formas Geométricas':'🔷',Números:'🔢',Alfabeto:'🔡',Todos:'🌈'};
 const LEVELS = {facil:{label:'Fácil',memo:60,mult:1},medio:{label:'Médio',memo:30,mult:1.5},avancado:{label:'Difícil',memo:15,mult:2}};
